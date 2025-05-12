@@ -67,7 +67,6 @@ const Home = () => {
 
     socket.emit("fetch-my-meets", {userId});
     socket.on("meets-fetched", async ({myMeets})=>{
-      console.log("myMeetsss", myMeets)
       setMyMeets(myMeets);
     })  
   },[socket])

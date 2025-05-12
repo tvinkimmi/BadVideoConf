@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import '../styles/MeetPage.css';
-import { Button } from "@mui/base";
+import { Button } from "@mui/base/Button";
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import VideocamIcon from '@mui/icons-material/Videocam';
@@ -14,20 +14,52 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import StopCircleIcon from '@mui/icons-material/StopCircle';
 import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked';
 import AgoraRTC from 'agora-rtc-sdk-ng';
-import { SocketContext } from "../context/SocketContext";
+import {SocketContext, socketEvents, SocketEventsMap} from "../context/SocketContext";
 import { useNavigate } from "react-router-dom";
 
 
 import RecordRTC from 'recordrtc';
 import download from 'downloadjs';
-import { Tooltip } from "@mui/material";
+import {Box, Tooltip} from "@mui/material";
+import {useClient} from "../AgoraSetup";
+import {DeviceSelect} from "./DeviceSelect";
 
 
 
-export default function Controls(props) {
-  const { tracks, client, setStart, setInCall, setUsers, setReady, screenTrack, setScreenTrack, participantsListOpen, setParticipantsListOpen, chatsContainerOpen, setChatsContainerOpen} = useContext(SocketContext);
-  const [trackState, setTrackState] = useState({ video: true, audio: true });
- 
+export default function Controls({ roomId, userId }) {
+  const { tracks, setStart, setInCall, setUsers, setReady, screenTrack, setScreenTrack, participantsListOpen, setParticipantsListOpen, chatsContainerOpen, setChatsContainerOpen, socket } = useContext(SocketContext);
+  const client = useClient();
+
+  const [trackState, setTrackState] = useState(
+      {
+        audio: !tracks[0].muted,
+        video: !tracks[1].muted,
+      }
+  );
+
+  useEffect(() => {
+    const audioHandler = (audio) => {
+      setTrackState(state => ({
+        ...state,
+        audio: !audio
+      }))
+    }
+    const videoHandler = (video) => {
+      setTrackState(state => ({
+        ...state,
+        video: !video
+      }))
+    }
+
+    socketEvents.on(SocketEventsMap.AudioMuted, audioHandler);
+    socketEvents.on(SocketEventsMap.VideoMuted, videoHandler);
+
+    return () => {
+      socketEvents.off(SocketEventsMap.AudioMuted, audioHandler);
+      socketEvents.off(SocketEventsMap.VideoMuted, videoHandler);
+    }
+  }, [])
+
   const [screenSharing, setScreenSharing] = useState(false);  
 
   // Screen recording
@@ -107,15 +139,14 @@ export default function Controls(props) {
 
   const mute = async (type) => {
     if (type === "audio") {
-      await tracks[0].setEnabled(!trackState.audio);
-      setTrackState((ps) => {
-        return { ...ps, audio: !ps.audio };
-      });
+      const nextValue = !tracks[0].muted;
+
+      await tracks[0].setMuted(nextValue);
+      socketEvents.emit(SocketEventsMap.AudioMuted, nextValue)
     } else if (type === "video") {
-      await tracks[1].setEnabled(!trackState.video);
-      setTrackState((ps) => {
-        return { ...ps, video: !ps.video };
-      });
+      const nextValue = !tracks[1].muted;
+      await tracks[1].setMuted(nextValue);
+      socketEvents.emit(SocketEventsMap.VideoMuted, nextValue)
     }
   };
 
@@ -133,6 +164,9 @@ export default function Controls(props) {
     setInCall(false);
     setUsers([]);
     setReady(false);
+
+    socket.emit("user-left-room", { roomId, userId });
+
     navigate('/');
   };
   
@@ -142,26 +176,36 @@ export default function Controls(props) {
     <div className="controls-page">
 
       <div className="controllers-video-part">
-
+        <Box sx={{
+          display: "flex",
+          gap: '2px',
+        }}>
+          <DeviceSelect tracks={tracks} client={client} type="audio" />
           <Button
-            variant="contained"
-            color={trackState.audio ? "primary" : "secondary"}
-            onClick={() => mute("audio")}
+              variant="contained"
+              color={trackState.audio ? "primary" : "secondary"}
+              onClick={() => mute("audio")}
           >
-            {trackState.audio ? 
-            
-              <Tooltip title="Mike is on" placement="top">
-                  <MicIcon /> 
-                  </Tooltip>
-                  : 
-                  <Tooltip title="Mike is off" placement="top">
+            {trackState.audio ?
+
+                <Tooltip title="Mike is on" placement="top">
+                  <MicIcon />
+                </Tooltip>
+                :
+                <Tooltip title="Mike is off" placement="top">
                   <MicOffIcon />
-                  </Tooltip>}
-                  
+                </Tooltip>}
+
           </Button>
-        
-        
-      
+        </Box>
+
+
+        <Box sx={{
+          display: "flex",
+          gap: '2px',
+        }}>
+        <DeviceSelect tracks={tracks} client={client} type="video" />
+
         <Button
           variant="contained"
           color={trackState.video ? "primary" : "secondary"}
@@ -177,8 +221,10 @@ export default function Controls(props) {
               </Tooltip>
               }
         </Button>
-     
-      {screenTrack ? (
+        </Box>
+
+
+        {screenTrack ? (
         
           <Button
           variant="contained"

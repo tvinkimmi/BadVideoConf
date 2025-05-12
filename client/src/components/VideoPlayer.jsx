@@ -1,41 +1,183 @@
 import { AgoraVideoPlayer } from "agora-rtc-react";
 
-import { SocketContext } from "../context/SocketContext";
-import { useContext } from "react";
+import {SocketContext, socketEvents, SocketEventsMap} from "../context/SocketContext";
+import {useContext, useEffect, useMemo, useState} from "react";
+import {Box} from "@mui/material";
+import {useClient } from "../AgoraSetup";
+import {EventEmitter} from "../utils/event-emitter";
 
-export default function Video(props) {
-  const { users, tracks, participants} = useContext(SocketContext);
-  
+export const VideoEventsMap = {
+    setActiveUser: 'setActiveUser',
+};
+export const videoEventEmitter = new EventEmitter();
 
-  return (
+export default function Video({ userId }) {
+  const { users, participants} = useContext(SocketContext);
 
-    <div className="videoPlayer-page">
-      
-        <div className="videoplayer-video" style={users.length < 1 ? {height: "72vh", width: "60vw"} : users.length === 1 ? {height: "65vh", width: "45vw"} : {}}>
-          <AgoraVideoPlayer id="video" style={users.length < 1 ? {height: "71vh", width: "60vw"} : users.length === 1 ? {height: "64vh", width: "45vw"} : {}}
-            videoTrack={tracks[1]}
-            />
-            <p>You</p>
-        </div>
-      
-      {users.length > 0 &&
-        users.map((user) => {
-          if (user.videoTrack) {
-            return (
-              
-                <div className="videoplayer-video" style={users.length === 1 ? {height: "65vh", width: "45vw"} : {}}>
-                  <AgoraVideoPlayer id = 'video'
-                    videoTrack={user.videoTrack}
-                    key={user.uid}
-                    style={users.length === 1 ? {height: "64vh", width: "45vw"} : {}}
-                  />
-                  <p>{participants[user.uid]}</p>
-                </div>
-              
-            );
-          } else return null;
-        })}
-    
-    </div>
-  );
-}
+  const client = useClient();
+  const [isVideoMuted, setIsVideoMuted] = useState(client.localTracks.find((track) => track.trackMediaType === "video").muted);
+
+    const videoTrack = useMemo(() => {
+        return client.localTracks.find((track) => track.trackMediaType === "video");
+    }, [client.localTracks]);
+
+    const [selectedVideoTrack, setSelectedVideoTrack] = useState(videoTrack);
+
+    useEffect(() => {
+        const handler = (uid) => {
+            if (uid === userId) {
+                setSelectedVideoTrack(videoTrack);
+                return;
+            }
+
+            const nextVideoTrack = users.find((user) => user.uid === uid)?.videoTrack;
+
+            if (nextVideoTrack) {
+                setSelectedVideoTrack(nextVideoTrack);
+            }
+        }
+
+        videoEventEmitter.on(VideoEventsMap.setActiveUser, handler);
+
+        return () => {
+            videoEventEmitter.off(VideoEventsMap.setActiveUser, handler);
+        }
+    }, [videoTrack])
+
+    useEffect(() => {
+        socketEvents.on(SocketEventsMap.VideoMuted, setIsVideoMuted);
+
+        return () => {
+            socketEvents.off(SocketEventsMap.VideoMuted, setIsVideoMuted);
+        }
+    }, []);
+
+
+    const handleVideoSelect = (videoTrack) => {
+        if (!videoTrack || !videoTrack.play) return;
+        setSelectedVideoTrack(videoTrack);
+    };
+
+
+    return (
+        <Box sx={{
+            height: '92vh',
+            width: '100%',
+            padding: '2%',
+            display: 'flex',
+            gap: '20px',
+            bgcolor: 'rgb(1, 8, 15)',
+        }}>
+            <Box sx={{
+                width: users.length > 0 ? '65%' : '100%',
+                height: '100%',
+                borderRadius: '0.7rem',
+                overflow: 'hidden',
+            }}>
+                {selectedVideoTrack ? (
+                    selectedVideoTrack === videoTrack ?  isVideoMuted ?
+                            <Box sx={{
+                                height: '100%',
+                                width: '100%',
+                                borderRadius: '0.7rem',
+                                overflow: 'hidden',
+                                position: 'relative',
+                                cursor: 'pointer',
+                                border: '1px solid rgba(255, 255, 255, 0.4)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                typography: 'h3',
+                                color: 'white'
+                            }}>
+                                You
+                            </Box>
+                            : <AgoraVideoPlayer style={{
+                            height: '92vh',
+                        }} videoTrack={selectedVideoTrack} />
+                        : <AgoraVideoPlayer style={{
+                            height: '92vh',
+                        }} videoTrack={selectedVideoTrack} />
+
+                ) : videoTrack && (
+                    <AgoraVideoPlayer style={{
+                        height: '92vh',
+                    }} videoTrack={videoTrack} />
+                )}
+            </Box>
+
+            <Box sx={{
+                width: '35%',
+                height: '100%',
+                display: users.length > 0 ? 'flex' : 'none',
+                flexDirection: 'column',
+                gap: '20px',
+                overflowY: 'auto',
+                '&::-webkit-scrollbar': {
+                    display: 'none'
+                },
+                scrollbarWidth: 'none',
+            }}>
+                {selectedVideoTrack !== videoTrack && <Box sx={{
+                    height: '51vh',
+                    width: '100%',
+                    borderRadius: '0.7rem',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    border: '1px solid rgba(255, 255, 255, 0.4)'
+                }} onClick={() => handleVideoSelect(videoTrack)}>
+                    <AgoraVideoPlayer style={{
+                        height: '51vh'
+                    }} videoTrack={videoTrack} />
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '10px',
+                        left: '10px',
+                        color: 'rgb(227, 230, 233)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                    }}>
+                        You
+                    </div>
+                </Box>}
+
+                {users.map((user) => {
+                    if (user.videoTrack === selectedVideoTrack) return;
+
+                    return (
+                        <Box
+                            key={user.uid}
+                            sx={{
+                                height: '51vh',
+                                width: '100%',
+                                borderRadius: '0.7rem',
+                                overflow: 'hidden',
+                                position: 'relative',
+                                cursor: 'pointer',
+                                border: '1px solid rgba(255, 255, 255, 0.4)'
+                            }}
+                            onClick={() => handleVideoSelect(user.videoTrack)}
+                        >
+                            <AgoraVideoPlayer style={{
+                                height: '51vh'
+                            }} videoTrack={user.videoTrack} />
+                            <Box sx={{
+                                position: 'absolute',
+                                bottom: '10px',
+                                left: '10px',
+                                color: 'rgb(227, 230, 233)',
+                                bgcolor: 'rgba(0, 0, 0, 0.5)',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                            }}>
+                                {participants[user.uid] || user.uid}
+                            </Box>
+                        </Box>
+                    )
+                })}
+            </Box>
+        </Box>
+    );
+};

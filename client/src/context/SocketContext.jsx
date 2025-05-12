@@ -1,7 +1,8 @@
 import React, { createContext, useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 import socketIoClient from 'socket.io-client';
-import { useClient, useMicrophoneAndCameraTracks } from '../AgoraSetup'
+import { useClient } from '../AgoraSetup'
+import {EventEmitter} from "../utils/event-emitter";
 
  
 export const SocketContext = createContext();
@@ -54,6 +55,12 @@ export const SocketContextProvider =  ({children}) => {
   )
 }
 
+export const SocketEventsMap = {
+  AudioMuted: 'AudioMuted',
+  VideoMuted: 'VideoMuted',
+}
+
+export const socketEvents = new EventEmitter();
 
 
 // export default socketContext

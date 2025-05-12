@@ -9,6 +9,7 @@ import Participants from '../components/Participants';
 import Chat from '../components/Chat';
 
 import AgoraRTC from "agora-rtc-react";
+import participants from "../components/Participants";
 
 
 
@@ -23,13 +24,17 @@ const MeetRoom =  () => {
       socket.emit('join-room', {userId, roomId: id});      
       setInCall(true);
     }
-    socket.on("user-joined", async () =>{      
-      socket.emit('get-participants', {roomId: id});
-      socket.on("participants-list", async ( {usernames, roomName})=>{
-        setParticipants(usernames);
-        setroomName(roomName);
-      });
+
+    socket.on("participants-list", async ( {usernames, roomName})=>{
+      setParticipants(usernames);
+      setroomName(roomName);
     });
+
+    socket.on("user-joined", async () => {
+      socket.emit('get-participants', {roomId: id});
+    });
+
+    socket.emit('get-participants', {roomId: id});
   }, [socket]);
     
     
@@ -58,22 +63,25 @@ const MeetRoom =  () => {
         }
       });
 
-      client.on("user-left", (user) => {
-        socket.emit("user-left-room", {userId: user.uid, roomId: id});
-        setUsers((prevUsers) => {
-          return prevUsers.filter((User) => User.uid !== user.uid);
-        });
+      client.on("user-left", () => {
+        socket.emit("get-participants", {roomId: id});
       });
 
       try {
-        await client.join(config.appId, name, config.token, Number(userId));
+        await client.join(config.appId, name, config.token, userId);
         try {
-          const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-          const videoTrack = await AgoraRTC.createCameraVideoTrack();
-          
+
+          const [audioTrack, videoTrack] = await Promise.all([AgoraRTC.createMicrophoneAudioTrack(), await AgoraRTC.createCameraVideoTrack()])
+
+
           setTracks([audioTrack, videoTrack]);
           setReady(true);
-          
+
+          await Promise.all([
+            audioTrack.setMuted(true),
+            videoTrack.setMuted(true)
+          ])
+
           // 3. Publish tracks
           await client.publish([audioTrack, videoTrack]);
           setStart(true);
@@ -104,7 +112,7 @@ const MeetRoom =  () => {
           <h3>Meet: <span>{roomName}</span></h3>
           <p>Meet Id: <span id='meet-id-copy'>{id}</span></p>
         </div>
-        <Participants />
+        <Participants userId={userId} />
 
         <Chat roomId={id} userId={userId}  />
        
@@ -112,7 +120,7 @@ const MeetRoom =  () => {
         <div className="meetPage-videoPlayer-container">
 
         {start && tracks ?
-        <VideoPlayer tracks={tracks} users={users} />
+        <VideoPlayer tracks={tracks} users={users} userId={userId} />
         : ''
         }
 
@@ -121,7 +129,7 @@ const MeetRoom =  () => {
         <div className="meetPage-controls-part">
 
         {ready && tracks && (
-          <Controls tracks={tracks} />
+          <Controls tracks={tracks} roomId={id} userId={userId} />
         )}
 
         </div>
