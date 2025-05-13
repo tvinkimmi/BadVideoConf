@@ -3,6 +3,7 @@ import { Select, MenuItem, IconButton } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import AgoraRTC from 'agora-rtc-sdk-ng';
+import {videoConfig} from "../pages/MeetRoom";
 
 export const DeviceSelect = ({ tracks, client, icon, type }) => {
     const [devices, setDevices] = useState([]);
@@ -34,7 +35,7 @@ export const DeviceSelect = ({ tracks, client, icon, type }) => {
             }
 
             const newTrack = await (type === 'video' ?
-                AgoraRTC.createCameraVideoTrack({ cameraId: deviceId }) :
+                AgoraRTC.createCameraVideoTrack({ cameraId: deviceId, encoderConfig: videoConfig.encoderConfig }) :
                 AgoraRTC.createMicrophoneAudioTrack({ microphoneId: deviceId }));
 
             await client.publish(newTrack);
