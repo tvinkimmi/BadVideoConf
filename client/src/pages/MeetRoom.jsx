@@ -12,6 +12,19 @@ import AgoraRTC from "agora-rtc-react";
 import participants from "../components/Participants";
 
 
+export const videoConfig = {
+  encoderConfig: {
+    width: 1280,
+    height: 720,
+    bitrate: 400,
+    frameRate: 15,
+    orientationMode: "adaptative",
+    minBitrate: 100,
+    maxBitrate: 500,
+    minFrameRate: 15,
+    maxFrameRate: 30,
+  }
+}
 
 const MeetRoom =  () => {
   const {id} = useParams();
@@ -54,9 +67,6 @@ const MeetRoom =  () => {
 
   }, [socket]);
 
-
-
-
   useEffect(() => {
     let init = async (name) => {
       client.on("user-published", async (user, mediaType) => {
@@ -92,15 +102,15 @@ const MeetRoom =  () => {
 
       });
 
-      client.on("user-left", () => {
-        socket.emit("get-participants", {roomId: id});
+      client.on("user-left", async () => {
+        await socket.emit("get-participants", {roomId: id});
       });
 
       try {
         await client.join(config.appId, name, config.token, userId);
         try {
 
-          const [audioTrack, videoTrack] = await Promise.all([AgoraRTC.createMicrophoneAudioTrack(), await AgoraRTC.createCameraVideoTrack()])
+          const [audioTrack, videoTrack] = await Promise.all([AgoraRTC.createMicrophoneAudioTrack(), await AgoraRTC.createCameraVideoTrack(videoConfig)])
 
 
           setTracks([audioTrack, videoTrack]);

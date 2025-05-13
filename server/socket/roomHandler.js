@@ -16,6 +16,14 @@ const roomHandler = ( socket) => {
         }
     });
 
+    socket.on('kick-user', async ({ userId, targetUserId, roomId }) => {
+        const room = await Rooms.findOne({_id: roomId});
+
+        if (room && room.host === userId) {
+            socket.broadcast.to(roomId).emit("force-leave", { targetUserId })
+        }
+    });
+
     socket.on('create-room', async ({userId, roomName, newMeetType, newMeetDate, newMeetTime})=>{
         const newRoom = new Rooms({
             roomName: roomName,
@@ -41,8 +49,16 @@ const roomHandler = ( socket) => {
     });
 
     socket.on('join-room', async ({roomId, userId})=>{
-        await Rooms.updateOne({_id: roomId}, {$addToSet: {participants: userId}});
-        await Rooms.updateOne({_id: roomId}, {$addToSet: {currentParticipants: userId}});
+        const { participants, currentParticipants } = await Rooms.findOne({_id: roomId});
+
+        if (!participants.includes(userId)){
+            await Rooms.updateOne({_id: roomId}, {$addToSet: {participants: userId}});
+        }
+
+        if (!currentParticipants.includes(userId)){
+            await Rooms.updateOne({_id: roomId}, {$addToSet: {currentParticipants: userId}});
+        }
+
         await socket.join(roomId);
         socket.broadcast.to(roomId).emit("user-joined", {userId});
     });

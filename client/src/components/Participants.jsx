@@ -5,6 +5,8 @@ import {videoEventEmitter, VideoEventsMap} from "./VideoPlayer";
 import MicOffIcon from '@mui/icons-material/MicOff';
 import MicIcon from '@mui/icons-material/Mic';
 import IconButton from '@mui/material/IconButton';
+import LogoutIcon from "@mui/icons-material/Logout";
+import {Tooltip} from "@mui/material";
 
 const Participants = ({ userId, hostId, roomId }) => {
     const {participants, participantsListOpen, audioTracks, socket } = useContext(SocketContext);
@@ -20,8 +22,12 @@ const Participants = ({ userId, hostId, roomId }) => {
 
     }, [participants, audioTracks]);
 
-    const handleMuteUser = (targetUserId) => {
-        socket.emit('mute-user', { targetUserId, userId, roomId });
+    const handleMuteUser = async (targetUserId) => {
+        await socket.emit('mute-user', { targetUserId, userId, roomId });
+    };
+
+    const handleKickUser = async (targetUserId) => {
+       await socket.emit('kick-user', { targetUserId, userId, roomId });
     };
 
     return (
@@ -62,19 +68,38 @@ const Participants = ({ userId, hostId, roomId }) => {
                                     }
                                 </div>
 
-                                {id !== userId && <IconButton
-                                    sx={{
-                                        pointerEvents: isHost ? 'auto' : 'none',
-                                    }}
-                                    onClick={() => {
-                                        if (user?.hasAudio) {
-                                            handleMuteUser(id);
-                                        }
-                                    }}
-                                    size="small"
-                                >
-                                    {user?.hasAudio ? <MicIcon fontSize="small"  /> : <MicOffIcon fontSize="small" />}
-                                </IconButton>}
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '4px',
+                                    alignItems: 'center',
+                                }}>
+                                    {id !== userId && <IconButton
+                                        sx={{
+                                            pointerEvents: isHost ? 'auto' : 'none',
+                                        }}
+                                        onClick={() => {
+                                            if (user?.hasAudio) {
+                                                handleMuteUser(id);
+                                            }
+                                        }}
+                                        size="small"
+                                    >
+                                        {user?.hasAudio ? <MicIcon fontSize="small"  /> :
+                                            isHost ?
+                                                <Tooltip title="Mute user" placement="top">
+                                                    <MicOffIcon fontSize="small" />
+                                                </Tooltip> :
+                                            <MicOffIcon fontSize="small" />}
+                                    </IconButton>}
+                                    {isHost && id !== hostId &&
+                                        <IconButton sx={{
+                                            pointerEvents: 'auto',
+                                        }} onClick={() => handleKickUser(id)}>
+                                            <Tooltip title="Kick user" placement="top">
+                                                <LogoutIcon fontSize="small" />
+                                            </Tooltip>
+                                        </IconButton>}
+                                </div>
                             </div>
                         );
                     })

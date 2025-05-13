@@ -153,6 +153,8 @@ export default function Controls({ roomId, userId }) {
   const navigate = useNavigate()
 
   const leaveChannel = async () => {
+    await socket.emit("user-left-room", { roomId, userId });
+
     await client.leave();
     client.removeAllListeners();
     tracks[0]?.close();
@@ -165,11 +167,19 @@ export default function Controls({ roomId, userId }) {
     setUsers([]);
     setReady(false);
 
-    socket.emit("user-left-room", { roomId, userId });
 
     navigate('/');
   };
-  
+
+
+  useEffect(() => {
+    socket.on('force-leave', async ({ targetUserId }) => {
+      if (targetUserId === userId) {
+        await leaveChannel();
+        alert('You have been kicked out of the room');
+      }
+    })
+  }, [])
 
 
   return (

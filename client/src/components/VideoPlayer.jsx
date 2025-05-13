@@ -76,9 +76,9 @@ export default function Video({ userId }) {
                 height: '100%',
                 borderRadius: '0.7rem',
                 overflow: 'hidden',
+                position: 'relative',
             }}>
-                {selectedVideoTrack ? (
-                    selectedVideoTrack === videoTrack ?  isVideoMuted ?
+                {selectedVideoTrack === videoTrack ? isVideoMuted ?
                             <Box sx={{
                                 height: '100%',
                                 width: '100%',
@@ -96,23 +96,34 @@ export default function Video({ userId }) {
                                 You
                             </Box>
                             : <AgoraVideoPlayer style={{
-                            height: '92vh',
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'contain',
+                                borderRadius: '0.7rem',
+                                overflow: "hidden"
                         }} videoTrack={selectedVideoTrack} />
                         : <AgoraVideoPlayer style={{
-                            height: '92vh',
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            borderRadius: '0.7rem',
+                            overflow: "hidden"
                         }} videoTrack={selectedVideoTrack} />
-
-                ) : videoTrack && (
-                    <AgoraVideoPlayer style={{
-                        height: '92vh',
-                    }} videoTrack={videoTrack} />
-                )}
+                }
             </Box>
 
             <Box sx={{
                 width: '35%',
                 height: '100%',
-                display: videoUsers.length > 0 ? 'flex' : 'none',
+                display: videoUsers.length > 0 || selectedVideoTrack !== videoTrack  ? 'flex' : 'none',
                 flexDirection: 'column',
                 gap: '20px',
                 overflowY: 'auto',
@@ -122,8 +133,8 @@ export default function Video({ userId }) {
                 scrollbarWidth: 'none',
             }}>
                 {selectedVideoTrack !== videoTrack && <Box sx={{
-                    height: '51vh',
                     width: '100%',
+                    height: '100%',
                     borderRadius: '0.7rem',
                     overflow: 'hidden',
                     position: 'relative',
@@ -131,7 +142,13 @@ export default function Video({ userId }) {
                     border: '1px solid rgba(255, 255, 255, 0.4)'
                 }} onClick={() => handleVideoSelect(videoTrack)}>
                     <AgoraVideoPlayer style={{
-                        height: '51vh'
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
                     }} videoTrack={videoTrack} />
                     <div style={{
                         position: 'absolute',
@@ -151,7 +168,7 @@ export default function Video({ userId }) {
                         <Box
                             key={user.uid}
                             sx={{
-                                height: '51vh',
+                                height: '100%',
                                 width: '100%',
                                 borderRadius: '0.7rem',
                                 overflow: 'hidden',
@@ -162,7 +179,13 @@ export default function Video({ userId }) {
                             onClick={() => handleVideoSelect(user.videoTrack)}
                         >
                             <AgoraVideoPlayer style={{
-                                height: '51vh'
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'contain',
                             }} videoTrack={user.videoTrack} />
                             <Box sx={{
                                 position: 'absolute',
