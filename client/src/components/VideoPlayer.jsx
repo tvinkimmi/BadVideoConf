@@ -21,7 +21,7 @@ export default function Video({ userId }) {
         return client.localTracks.find((track) => track.trackMediaType === "video");
     }, [client.localTracks]);
 
-    const [selectedVideoTrack, setSelectedVideoTrack] = useState(videoTrack);
+    const [selectedVideoTrack, setSelectedVideoTrack] = useState(null);
 
     useEffect(() => {
         const handler = () => {
@@ -79,7 +79,9 @@ export default function Video({ userId }) {
     });
 
     return (
-        <Box sx={{
+        <Box onClick={() => {
+            setSelectedVideoTrack(null)
+        }} sx={{
             height: '92vh',
             width: '100%',
             padding: '2%',
@@ -93,8 +95,9 @@ export default function Video({ userId }) {
                 borderRadius: '0.7rem',
                 overflow: 'hidden',
                 position: 'relative',
+                display: selectedVideoTrack ? 'static' : 'none'
             }}>
-                {selectedVideoTrack === videoTrack ? isVideoMuted ?
+                {selectedVideoTrack && (selectedVideoTrack === videoTrack ? isVideoMuted ?
                             <Box sx={{
                                 height: '100%',
                                 width: '100%',
@@ -133,20 +136,24 @@ export default function Video({ userId }) {
                             borderRadius: '0.7rem',
                             overflow: "hidden"
                         }} videoTrack={selectedVideoTrack} />
-                }
+                )}
             </Box>
 
             <Box sx={{
-                width: '35%',
+                width: selectedVideoTrack ? '35%' : '100%',
                 height: '100%',
                 display: videoUsers.length > 0 || selectedVideoTrack !== videoTrack  ? 'flex' : 'none',
-                flexDirection: 'column',
+                flexDirection: selectedVideoTrack ? 'column' : 'row',
                 gap: '20px',
                 overflowY: 'auto',
                 '&::-webkit-scrollbar': {
                     display: 'none'
                 },
                 scrollbarWidth: 'none',
+                ...(videoUsers.length > 4 || videoUsers.length === 3 && selectedVideoTrack === null && {
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                })
             }}>
                 {selectedVideoTrack !== videoTrack && <Box sx={{
                     width: '100%',
@@ -156,7 +163,10 @@ export default function Video({ userId }) {
                     position: 'relative',
                     cursor: 'pointer',
                     border: '1px solid rgba(255, 255, 255, 0.4)'
-                }} onClick={() => handleVideoSelect(videoTrack)}>
+                }} onClick={(event) => {
+                    event.stopPropagation();
+                    handleVideoSelect(videoTrack)
+                }}>
                     <AgoraVideoPlayer style={{
                         position: 'absolute',
                         top: '50%',
@@ -192,7 +202,10 @@ export default function Video({ userId }) {
                                 cursor: 'pointer',
                                 border: '1px solid rgba(255, 255, 255, 0.4)'
                             }}
-                            onClick={() => handleVideoSelect(user.videoTrack)}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                handleVideoSelect(user.videoTrack)
+                            }}
                         >
                             <AgoraVideoPlayer style={{
                                 position: 'absolute',
