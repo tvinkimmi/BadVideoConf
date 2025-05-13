@@ -18,6 +18,7 @@ export const SocketContextProvider =  ({children}) => {
 
   const [inCall, setInCall] = useState(false);
   const [users, setUsers] = useState([]);
+  const [audioTracks, setAudioTracks] = useState([]);
   const [start, setStart] = useState(false);
   const client = useClient();
   const [tracks, setTracks] = useState(null);
@@ -51,7 +52,7 @@ export const SocketContextProvider =  ({children}) => {
   }, [socket]);
   
   return (
-    <SocketContext.Provider  value={{myMeets, setMyMeets, newMeetType, setNewMeetType, participants, setParticipants, userId, socket, inCall, setInCall, ready, setReady, tracks, setTracks, screenTrack, setScreenTrack, client, users, setUsers, start, setStart, participantsListOpen, setParticipantsListOpen, chatsContainerOpen, setChatsContainerOpen}} >{children}</SocketContext.Provider>
+    <SocketContext.Provider  value={{myMeets, setMyMeets, newMeetType, setNewMeetType, participants, setParticipants, userId, socket, inCall, setInCall, ready, setReady, tracks, setTracks, screenTrack, setScreenTrack, client, users, setUsers, start, setStart, participantsListOpen, setParticipantsListOpen, chatsContainerOpen, setChatsContainerOpen, audioTracks, setAudioTracks}} >{children}</SocketContext.Provider>
   )
 }
 

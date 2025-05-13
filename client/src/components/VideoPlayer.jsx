@@ -58,6 +58,9 @@ export default function Video({ userId }) {
         setSelectedVideoTrack(videoTrack);
     };
 
+    const videoUsers = users.filter(user => {
+        return user.videoTrack !== selectedVideoTrack && user.hasVideo;
+    });
 
     return (
         <Box sx={{
@@ -69,7 +72,7 @@ export default function Video({ userId }) {
             bgcolor: 'rgb(1, 8, 15)',
         }}>
             <Box sx={{
-                width: users.length > 0 ? '65%' : '100%',
+                width: videoUsers.length > 0 ? '65%' : '100%',
                 height: '100%',
                 borderRadius: '0.7rem',
                 overflow: 'hidden',
@@ -109,7 +112,7 @@ export default function Video({ userId }) {
             <Box sx={{
                 width: '35%',
                 height: '100%',
-                display: users.length > 0 ? 'flex' : 'none',
+                display: videoUsers.length > 0 ? 'flex' : 'none',
                 flexDirection: 'column',
                 gap: '20px',
                 overflowY: 'auto',
@@ -143,9 +146,7 @@ export default function Video({ userId }) {
                     </div>
                 </Box>}
 
-                {users.map((user) => {
-                    if (user.videoTrack === selectedVideoTrack) return;
-
+                {videoUsers.map((user) => {
                     return (
                         <Box
                             key={user.uid}

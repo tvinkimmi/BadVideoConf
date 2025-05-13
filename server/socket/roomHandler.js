@@ -3,7 +3,10 @@ import User from '../models/User.js';
 
 
 const roomHandler = (socket) => {
-
+    socket.on('get-room-host', async ({ roomId })=>{
+        const room = await Rooms.findOne({_id: roomId});
+        await socket.emit("room-host", { host: room.host });
+    })
     socket.on('create-room', async ({userId, roomName, newMeetType, newMeetDate, newMeetTime})=>{
         const newRoom = new Rooms({
             roomName: roomName,
@@ -54,7 +57,6 @@ const roomHandler = (socket) => {
             usernames[ _id.valueOf().toString()] = username;
         });
 
-        console.log(usernames)
         socket.emit("participants-list", {usernames, roomName});
     })
 
@@ -85,9 +87,7 @@ const roomHandler = (socket) => {
     })
 
     socket.on("new-chat", async ({msg, roomId})=>{
-        // await socket.to(roomId).emit("new-chat-arrived", {msg});
-        await socket.broadcast.emit("new-chat-arrived", {msg, room:roomId});
-        console.log('reciedfv');
+        socket.broadcast.to(roomId).emit("new-chat-arrived", {msg, room: roomId});
     })
 }
 

@@ -16,14 +16,19 @@ import participants from "../components/Participants";
 const MeetRoom =  () => {
   const {id} = useParams();
   const [roomName, setroomName] = useState('')
-  const {socket, inCall, setInCall, client, users, setUsers, ready, setReady, tracks, setTracks, setStart, setParticipants, start} = useContext(SocketContext);
+  const {socket, inCall, setInCall, client, users, setUsers, ready, setReady, tracks, setTracks, setStart, setParticipants, start, setAudioTracks} = useContext(SocketContext);
   const userId = localStorage.getItem("userId");
-  
+  const [hostId, setHostId] = useState(null);
+
   useEffect(() =>{
     if (!inCall) {
-      socket.emit('join-room', {userId, roomId: id});      
+      socket.emit('join-room', {userId, roomId: id});
       setInCall(true);
     }
+
+    socket.on("room-host", ({host}) => setHostId(host));
+
+    socket.emit('get-room-host', { roomId: id });
 
     socket.on("participants-list", async ( {usernames, roomName})=>{
       setParticipants(usernames);
@@ -49,18 +54,28 @@ const MeetRoom =  () => {
         }
         if (mediaType === "audio") {
           user.audioTrack.play();
+
+          setAudioTracks((prevAudioTracks) => {
+            return [...prevAudioTracks, user];
+          });
         }
       });
 
       client.on("user-unpublished", (user, mediaType) => {
+
         if (mediaType === "audio") {
           if (user.audioTrack) user.audioTrack.stop();
-        }
-        if (mediaType === "video") {
-          setUsers((prevUsers) => {
-            return prevUsers.filter((User) => User.uid !== user.uid);
+          setAudioTracks((prevAudioTracks) => {
+            return prevAudioTracks.filter((audioTrack) => audioTrack.uid !== user.uid);
           });
+
+          return;
         }
+
+        setUsers((prevUsers) => {
+          return prevUsers.filter((User) => User.uid !== user.uid);
+        });
+
       });
 
       client.on("user-left", () => {
@@ -112,7 +127,7 @@ const MeetRoom =  () => {
           <h3>Meet: <span>{roomName}</span></h3>
           <p>Meet Id: <span id='meet-id-copy'>{id}</span></p>
         </div>
-        <Participants userId={userId} />
+        <Participants userId={userId} hostId={hostId} />
 
         <Chat roomId={id} userId={userId}  />
        
