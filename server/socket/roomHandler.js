@@ -2,11 +2,20 @@ import Rooms from '../models/Rooms.js';
 import User from '../models/User.js';
 
 
-const roomHandler = (socket) => {
+const roomHandler = ( socket) => {
     socket.on('get-room-host', async ({ roomId })=>{
         const room = await Rooms.findOne({_id: roomId});
         await socket.emit("room-host", { host: room.host });
-    })
+    });
+
+    socket.on('mute-user', async ({ userId, targetUserId, roomId }) => {
+        const room = await Rooms.findOne({_id: roomId});
+
+        if (room && room.host === userId) {
+            socket.broadcast.to(roomId).emit("force-mute", { targetUserId })
+        }
+    });
+
     socket.on('create-room', async ({userId, roomName, newMeetType, newMeetDate, newMeetTime})=>{
         const newRoom = new Rooms({
             roomName: roomName,

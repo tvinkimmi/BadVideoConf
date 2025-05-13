@@ -6,7 +6,7 @@ import MicOffIcon from '@mui/icons-material/MicOff';
 import MicIcon from '@mui/icons-material/Mic';
 import IconButton from '@mui/material/IconButton';
 
-const Participants = ({ userId, hostId }) => {
+const Participants = ({ userId, hostId, roomId }) => {
     const {participants, participantsListOpen, audioTracks, socket } = useContext(SocketContext);
 
     const members = useMemo(() => {
@@ -20,18 +20,8 @@ const Participants = ({ userId, hostId }) => {
 
     }, [participants, audioTracks]);
 
-    useEffect(() => {
-        console.log('audioTracks')
-        console.log(audioTracks);
-    }, [audioTracks])
-
-
     const handleMuteUser = (targetUserId) => {
-        // Здесь будет логика отключения звука пользователя через сокет
-        if (userId === hostId) {
-            // Эмитим событие на сервер для отключения звука
-            socket.emit('mute-user', { targetUserId });
-        }
+        socket.emit('mute-user', { targetUserId, userId, roomId });
     };
 
     return (
@@ -43,8 +33,6 @@ const Participants = ({ userId, hostId }) => {
                     members.map(({ id, user, name }) => {
                         const actionAllowed = user || id === userId;
                         const isHost = hostId === userId;
-
-                        console.log('eblan', user)
 
                         return (
                             <div className="participant"
@@ -74,17 +62,19 @@ const Participants = ({ userId, hostId }) => {
                                     }
                                 </div>
 
-                                {isHost && id !== hostId && (
-                                    <IconButton
-                                        onClick={(e) => {
-                                            e.stopPropagation();
+                                {id !== userId && <IconButton
+                                    sx={{
+                                        pointerEvents: isHost ? 'auto' : 'none',
+                                    }}
+                                    onClick={() => {
+                                        if (user?.hasAudio) {
                                             handleMuteUser(id);
-                                        }}
-                                        size="small"
-                                    >
-                                        {user?.hasAudio ? <MicIcon fontSize="small"  /> : <MicOffIcon fontSize="small" />}
-                                    </IconButton>
-                                )}
+                                        }
+                                    }}
+                                    size="small"
+                                >
+                                    {user?.hasAudio ? <MicIcon fontSize="small"  /> : <MicOffIcon fontSize="small" />}
+                                </IconButton>}
                             </div>
                         );
                     })

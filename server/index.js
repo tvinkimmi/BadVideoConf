@@ -31,14 +31,10 @@ const io = new Server(server, {
     }
 });
 
-io.on("connection", (socket) =>{
+io.on("connection", (socket) => {
     roomHandler(socket);
+});
 
-    socket.on('disconnect', ()=>{
-        console.log("User disconnected");
-    })
-
-})
 const PORT = 6001;
 mongoose.connect('mongodb://127.0.0.1:27017/meet-app', {
     useNewUrlParser: true,
