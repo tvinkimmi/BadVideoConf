@@ -24,6 +24,22 @@ export default function Video({ userId }) {
     const [selectedVideoTrack, setSelectedVideoTrack] = useState(videoTrack);
 
     useEffect(() => {
+        const handler = () => {
+            const isActiveUserLeft = users.every((user) => user.videoTrack !== selectedVideoTrack);
+
+            if (isActiveUserLeft) {
+                setSelectedVideoTrack(videoTrack);
+            }
+        }
+
+        client.on("user-left", handler);
+
+        return () => {
+            client.off('user-left', handler)
+        }
+    }, [users])
+
+    useEffect(() => {
         const handler = (uid) => {
             if (uid === userId) {
                 setSelectedVideoTrack(videoTrack);
