@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
 import '../styles/MeetPage.css';
 import {useParams} from 'react-router-dom';
-import { SocketContext } from '../context/SocketContext';
-import { config } from '../AgoraSetup';
+import {SocketContext, socketEvents, SocketEventsMap} from '../context/SocketContext';
+import {config, useClient} from '../AgoraSetup';
 import VideoPlayer from '../components/VideoPlayer';
 import Controls from '../components/Controls';
 import Participants from '../components/Participants';
@@ -40,9 +40,23 @@ const MeetRoom =  () => {
     });
 
     socket.emit('get-participants', {roomId: id});
+
+    socket.on("force-mute", async ({ targetUserId }) => {
+        if (targetUserId === userId) {
+          const audioTrack = client.localTracks.find((track) => track.trackMediaType === "audio");
+
+          if (audioTrack) {
+            await audioTrack.setMuted(true);
+            socketEvents.emit(SocketEventsMap.AudioMuted, true)
+          }
+        }
+    });
+
   }, [socket]);
-    
-    
+
+
+
+
   useEffect(() => {
     let init = async (name) => {
       client.on("user-published", async (user, mediaType) => {
@@ -127,7 +141,7 @@ const MeetRoom =  () => {
           <h3>Meet: <span>{roomName}</span></h3>
           <p>Meet Id: <span id='meet-id-copy'>{id}</span></p>
         </div>
-        <Participants userId={userId} hostId={hostId} />
+        <Participants userId={userId} hostId={hostId} roomId={id} />
 
         <Chat roomId={id} userId={userId}  />
        
